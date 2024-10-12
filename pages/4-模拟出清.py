@@ -763,14 +763,22 @@ if df is not None and pl is not None:
     jt_map = {tab1: "赣能", tab2: "华能", tab3: "国家能源", tab4: "国家电投", tab5: '大唐'}
     for ji_tuan in group_lists:
         i = next(key for key, value in jt_map.items() if value == ji_tuan)  # 获取当前集团的key值，也就是tab
-        unit_list = unit_df.loc[unit_df['集团'] == ji_tuan, '机组名称'].tolist()
+        unit_list = []
+        origin_unit_list = unit_df.loc[unit_df['集团'] == ji_tuan, '机组名称'].tolist()
+        for unit in origin_unit_list:
+            unit_cap = df.loc[df['机组名称'] == unit, '机组容量(MW)'].values  # 装机容量为机组容量
+            if unit_cap.size == 0 or unit_cap is None:
+                continue
+            else:
+                unit_list.append(unit)
         start_unit = list(set(unit_list).intersection(set(station_load_df.columns.tolist())))  # 每个集团的开机机组
         df2 = pd.DataFrame(index=[ji_tuan] + unit_list,
                            columns=['装机容量', '开机容量', '发电量', '最高价格', '最低价格', '平均价格', '负荷率',
                                     '发电进度'])  # 集团总的和各机组的数据
         df2.loc[ji_tuan] = df1.loc[ji_tuan]
         for unit in unit_list:
-            df2.loc[unit, '装机容量'] = df.loc[df['机组名称'] == unit, '机组容量(MW)'].values  # 装机容量为机组容量
+            unit_cap = df.loc[df['机组名称'] == unit, '机组容量(MW)'].values  # 装机容量为机组容量
+            df2.loc[unit, '装机容量'] = unit_cap[0]
             if unit in start_unit:
                 df2.loc[unit, '开机容量'] = df.loc[df['机组名称'] == unit, '机组容量(MW)'].values  # 开机容量为开机机组容量之和
                 df2.loc[unit, '发电量'] = station_load_df.loc[:, unit].sum() / 4
